@@ -2,7 +2,7 @@ import os.path
 import sqlite3
 import time
 import traceback
-from hashlib import sha256
+from hashlib import sha256, md5
 
 from blockchain_types import BlockObject
 
@@ -11,16 +11,16 @@ def create():
     connection = sqlite3.connect("users.sdb")
     cursor = connection.cursor()
     cursor.execute("""CREATE TABLE IF NOT EXISTS users(
-        user_hash TEXT,
-        balance INT)""")
+                      user_hash TEXT,
+                      balance INT)""")
     connection.commit()
     cursor.execute("""CREATE TABLE IF NOT EXISTS blockchain(
-        sender TEXT,
-        recipient TEXT,
-        amount INT,
-        hash TEXT,
-        prev_hash TEXT,
-        timestamp INT)""")
+                      sender TEXT,
+                      recipient TEXT,
+                      amount INT,
+                      hash TEXT,
+                      prev_hash TEXT,
+                      timestamp INT)""")
     connection.commit()
 
     amogus = {'hash': '3102454749e02249dc98633e3d77c2a3f573f1fd3a386d89faa5270396d29a7e',
@@ -34,18 +34,17 @@ def create():
     connection.commit()
 
     cursor.execute("""CREATE TABLE IF NOT EXISTS cheques(
-            cheque_hash TEXT,
-            recipient TEXT,
-            description TEXT,
-            amount INT,
-            status BOOL,
-            sender TEXT,
-            timestamp INT)""")
+                      cheque_hash TEXT,
+                      recipient TEXT,
+                      description TEXT,
+                      amount INT,
+                      status BOOL,
+                      sender TEXT,
+                      timestamp INT)""")
     connection.commit()
 
     cursor.close()
     connection.close()
-
 
 class DataBase:
     def __init__(self):
@@ -106,15 +105,15 @@ class DataBase:
     def update_user(self, user_hash, delta_amount):
         user = self.get_user(user_hash)
         amount = user[1] + delta_amount
-        self.cursor.execute(f"UPDATE users SET amount={amount} WHERE user_hash='{user_hash}'")
+        self.cursor.execute(f"UPDATE users SET balance={amount} WHERE user_hash='{user_hash}'")
         self.connection.commit()
 
     def create_cheque(self, description, amount, recipient):
-        cheque_hash = sha256()
+        cheque_hash = md5()
 
-        cheque_hash.update(str(description).encode('utf-8'))
         cheque_hash.update(str(amount).encode('utf-8'))
         cheque_hash.update(str(recipient).encode('utf-8'))
+        cheque_hash.update(str(description).encode('utf-8'))
         cheque_hash.update(str(time.time()).encode('utf-8'))
 
         cheque_hash = cheque_hash.hexdigest()

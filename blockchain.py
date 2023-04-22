@@ -42,7 +42,7 @@ class Blockchain:
 
     def __repr__(self):
         try:
-            block = self.getLastBlock()
+            block = self.get_last_block()
         except:
             block = {}
         return repr(block)
@@ -55,7 +55,7 @@ class Block:
                  recipient: str = "",
                  amount: int = 0):
         self.timestamp = time()
-        self.prevHash = chain.getLastBlock().hash
+        self.prevHash = chain.get_last_block().hash
         self.nonce = 0
 
         self.data = {"sender": sender,
@@ -88,11 +88,3 @@ class Block:
 
     def __repr__(self):
         return repr(self.block)
-
-
-blockchain = Blockchain()
-print(blockchain.getLastBlock())
-block = Block(blockchain, "Anton", "NikVas", 100)
-print(block.block)
-print(blockchain.add_block(block.block))
-print(blockchain.get_last_block())

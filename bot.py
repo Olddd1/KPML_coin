@@ -1,8 +1,3 @@
-import io
-import traceback
-
-import qrcode
-
 import telebot
 import hashlib
 
@@ -10,6 +5,8 @@ import keyboards
 import config
 import users
 from utils import qr_generate
+
+from blockchain import Blockchain, Block
 
 bot = telebot.TeleBot(config.TOKEN)
 
@@ -27,8 +24,8 @@ def start(message):
         user = database.user_create(user_hash)
 
     if len(message.text.split()) > 1:
-        if "cheque" in message:
-            cheque = message.text.split()[1].split("__")[0]
+        if "_c" in message.text:
+            cheque = message.text.split()[1].split("_")[0]
             cheque_data = database.get_cheque(cheque)
 
             amount = cheque_data[3]
@@ -37,13 +34,18 @@ def start(message):
                 database.update_cheque(cheque, user_hash)
                 database.update_user(user_hash, -amount)
                 database.update_user(cheque_data[1], amount)
-                bot.send_message("Оплата прошла успешно")
+                
+                blockchain = Blockchain()
+                block = Block(blockchain, user_hash, cheque_data[1], amount)
+                blockchain.add_block(block.block)
+
+                bot.send_message(user_id, "Оплата прошла успешно")
             else:
-                bot.send_message("Недостаточно средств")
+                bot.send_message(user_id, "Недостаточно средств")
 
 
         else:
-            address = message.text.split()[1].split("__")[0]
+            address = message.text.split()[1].split("_")[0]
             # TODO: оплата с запросом цены
 
     markup = keyboards.menu()
@@ -58,7 +60,7 @@ def menu(message):
     user = users.DataBase().get_user(user_hash)
 
     message_text = f"Адресс вашего кошелька: `{user_hash}`\n" \
-                   f"Ваш баланс: {user[1]} KPML_coin"
+                   f"Ваш баланс: {user[1]} KPML coin"
 
     markup = telebot.types.ReplyKeyboardMarkup()
     markup.row(telebot.types.InlineKeyboardButton("Сгенерировать QR код"))
@@ -117,13 +119,15 @@ def qr_generate_by_money(message):
         db = users.DataBase()
         cheque = db.create_cheque(f"Оплата на {amount} рублей", amount, user_hash)
 
-        src = f"https://t.me/KPML_money_test_bot/start={cheque}__cheque"
+        src = f"https://t.me/KPML_money_test_bot?start={cheque}_c"
         qr_code = qr_generate(src, f"{cheque}.png")
+        # src = f"https://t.me/KPML_money_test_bot?start=_cheque"
+
 
         markup = telebot.types.ReplyKeyboardMarkup()
         markup.row(telebot.types.InlineKeyboardButton("Меню"))
 
-        bot.send_photo(user_id, qr_code, "QR код на оплату сгенерирован", reply_markup=markup)
+        bot.send_photo(user_id, qr_code, f"QR код на оплату сгенерирован\n{src}", reply_markup=markup)
     except:
         if message.text == "Меню":
             user_id = message.chat.id
@@ -132,7 +136,7 @@ def qr_generate_by_money(message):
             user = users.DataBase().get_user(user_hash)
 
             message_text = f"Адресс вашего кошелька: `{user_hash}`\n" \
-                           f"Ваш баланс: {user[1]} KPML_coin"
+                           f"Ваш баланс: {user[1]} KPML coin"
 
             markup = telebot.types.ReplyKeyboardMarkup()
             markup.row(telebot.types.InlineKeyboardButton("Сгенерировать QR код"))
