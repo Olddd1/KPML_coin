@@ -30,7 +30,10 @@ def start(message):
 
             amount = cheque_data[3]
 
-            if amount <= user[1]:
+            recipient = cheque_data[1]
+            recipient = database.get_user(recipient)
+
+            if (0 <= amount <= user[1]) or (amount < 0 and abs(amount) <= recipient[1]):
                 database.update_cheque(cheque, user_hash)
                 database.update_user(user_hash, -amount)
                 database.update_user(cheque_data[1], amount)
